@@ -4,18 +4,6 @@
 #include <ctype.h>
 #include <sqlite3.h>
 
-#define bking 'K'
-#define bpawn 'P'
-#define bknight 'N'
-#define bbishop 'B'
-#define brook 'R'
-#define bqueen 'Q'
-#define wking 'k'
-#define wpawn 'p'
-#define wknight 'n'
-#define wbishop 'b'
-#define wrook 'r'
-#define wqueen 'q'
 
 typedef struct board board;
 struct board{
@@ -34,22 +22,50 @@ int sign(int x){
 
 board createBoard(){
 	board b;
-	strcpy(b.state, "RNBQKBNRPPPPPPPP                                pppppppprnbqkbnr0@");
+	strcpy(b.state, "SNBQJBNSPPPPPPPP                                ppppppppsnbqjbns0@");
 	return b;
 }
 
-int kingMove(int xi, int yi, int xf, int yf, board b){
-	if(abs(xi-xf)>1 || abs(yi-yf)>1) return 0;
+int validateState(board b);
+
+void emptyCB(char *input){
+}
+
+int kingMove(int xi, int yi, int xf, int yf, board *b){
+	if(abs(xi-xf)>1 || abs(yi-yf)>2) return 0;
+	if(xi==xf && abs(yf-yi)==2 && tolower(b->state[8*xi+yi]) == 'j'){
+		int dir = sign(yf-yi);
+		char ik = b->state[8*xi+yi];
+		char ir = b->state[8*xi+(7*((dir+1)/2))];
+		if(tolower(b->state[8*xi+(7*((dir+1)/2))]) == 's'){
+			board n;
+			n.state[8*xi+yi] = ' ';
+			n.state[8*xi+yi+dir] = ik;
+			if(!validateState(n)) return 0;
+			n.state[8*xi+yi+dir] = ' ';
+			n.state[8*xi+yi+2*dir] = ik;
+			if(!validateState(n)) return 0;
+			b->state[8*xf+yf] = ik+1;
+			b->state[8*xi+(4+dir)] = ir-1;
+			b->state[8*xi+(7*((dir+1)/2))] = ' ';
+			return 1;
+		}
+		return 0;
+	}
+	if(abs(yi-yf)>1) return 0;
+	if(tolower(b->state[8*xi+yi]) == 'j') b->state[8*xf+yf] = b->state[8*xi+yi]+1;
+	b->state[8*xf+yf] = b->state[8*xi+yi];
 	return 1;
 }
 
-int promote(int xi, int yi, int x, int y, board *b, void (*promotion_cb)(char *)){
+int promote(int xi, int yi, int xf, int yf, board *b, void (*promotion_cb)(char *)){
 	char np;
 	promotion_cb(&np);
 	np = tolower(np);
 	if(np == 'n' || np == 'b' || np == 'r' || np == 'q'){
 		if(isupper(b->state[8*xi+yi])) b->state[8*xi+yi] = toupper(np);
 		else b->state[8*xi+yi] = np;
+		b->state[8*xf+yf] = b->state[8*xi+yi];
 		return 1;
 	}
 	return 0;
@@ -60,18 +76,21 @@ int wpawnMove(int xi, int yi, int xf, int yf, board *b, void (*promotion_cb)(cha
 	if((xf-xi==-1 && abs(yi-yf)==1 && piece != 32) || (xf-xi==-1 && yf==yi && piece==32)){
 		b->state[65] = '@';
 		if(xf==0) return promote(xi, yi, xf, yf, b, promotion_cb);
-		else return 1;
+		b->state[8*xf+yf] = b->state[8*xi+yi];
+		return 1;
 	}
 
 	if(xf-xi==-1 && abs(yi-yf)==1 && b->state[65] == '@'+8*xf+yf){
 		b->state[65] = '@';
 		b->state[8*(xf+1)+yf] = ' ';
 		if(xf==0) return promote(xi, yi, xf, xf, b, promotion_cb);
-		else return 1;
+		b->state[8*xf+yf] = b->state[8*xi+yi];
+		return 1;
 	}
 
 	if(xi==6 && xf-xi==-2 && yf==yi && piece==32){
 		b->state[65] = '@' + 8*(xf+1)+yf;
+		b->state[8*xf+yf] = b->state[8*xi+yi];
 		return 1;
 	}
 	return 0;
@@ -82,7 +101,8 @@ int bpawnMove(int xi, int yi, int xf, int yf, board *b, void (*promotion_cb)(cha
 	if((xf-xi==1 && abs(yi-yf)==1 && piece != 32) || (xf-xi==1 && yf==yi && piece==32)){
 		b->state[65] = '@';
 		if(xf==0) return promote(xi, yi, xf, yf, b, promotion_cb);
-		else return 1;
+		b->state[8*xf+yf] = b->state[8*xi+yi];
+		return 1;
 	}
 
 	if(xf-xi==1 && abs(yi-yf)==1 && b->state[65] == '@'+8*xf+yf){
@@ -94,51 +114,58 @@ int bpawnMove(int xi, int yi, int xf, int yf, board *b, void (*promotion_cb)(cha
 
 	if(xi==1 && xf-xi==2 && yf==yi && piece==32){
 		b->state[65] = '@' + 8*(xf-1)+yf;
+		b->state[8*xf+yf] = b->state[8*xi+yi];
 		return 1;
 	}
 	return 0;
 }
 
-int knightMove(int xi, int yi, int xf, int yf, board b){
+int knightMove(int xi, int yi, int xf, int yf, board *b){
 	if(abs(xf-xi) > 2 || abs(yf-yi)>2) return 0;
-	if(abs(xf-xi)+abs(yf-yi)==3) return 1;
+	if(abs(xf-xi)+abs(yf-yi)==3){
+		b->state[8*xf+yf] = b->state[8*xi+yi];
+		return 1;
+	}
 	return 0;
 }
 
-int bishopMove(int xi, int yi, int xf, int yf, board b){
+int bishopMove(int xi, int yi, int xf, int yf, board *b){
 	if(abs(xf-xi)!=abs(yf-yi)) return 0;
 	char p;
 	for(int i=1; i<(abs(xf-xi)); i++){
 		int x = xi + sign(xf-xi)*i;
 		int y = yi + sign(yf-yi)*i;
-		p = b.state[8*x+y];
+		p = b->state[8*x+y];
 		if(p != 32)
 			return 0;
 	}
+	b->state[8*xf+yf] = b->state[8*xi+yi];
 	return 1;
 }
 
-int rookMove(int xi, int yi, int xf, int yf, board b){
+int rookMove(int xi, int yi, int xf, int yf, board *b){
 	if(xi!=xf && yi!=yf) return 0;
 	char p;
 	if(xi!=xf)
 		for(int i=1; i<(abs(xf-xi)); i++){
 			int x = xi + sign(xf-xi)*i;
 			int y = yi;
-			p = b.state[8*x+y];
+			p = b->state[8*x+y];
 			if(p != 32) return 0;
 		}
 	if(yi!=yf)
 		for(int i=1; i<(abs(yf-yi)); i++){
 			int x = xi;
 			int y = yi + sign(yf-yi)*i;
-			p = b.state[8*x+y];
+			p = b->state[8*x+y];
 			if(p != 32) return 0;
 		}
+	if(tolower(b->state[8*xi+yi]) == 's') b->state[8*xf+yf] = b->state[8*xi+yi]-1;
+	b->state[8*xf+yf] = b->state[8*xi+yi];
 	return 1;
 }
 
-int queenMove(int xi, int yi, int xf, int yf, board b){
+int queenMove(int xi, int yi, int xf, int yf, board *b){
 	return bishopMove(xi, yi, xf, yf, b) || rookMove(xi, yi, xf, yf, b);
 }
 
@@ -153,15 +180,15 @@ int validateMove(board *b, int* move, void (*promotion_cb)(char *)){
 	if(piece == 'p') return wpawnMove(move[0], move[1], move[2], move[3], b, promotion_cb);
 	if(piece == 'P') return bpawnMove(move[0], move[1], move[2], move[3], b, promotion_cb);
 	b->state[65] = '@';
-	if(tolower(piece) == 'k') return kingMove(move[0], move[1], move[2], move[3], *b);
-	if(tolower(piece) == 'n') return knightMove(move[0], move[1], move[2], move[3], *b);
-	if(tolower(piece) == 'b') return bishopMove(move[0], move[1], move[2], move[3], *b);
-	if(tolower(piece) == 'r') return rookMove(move[0], move[1], move[2], move[3], *b);
-	if(tolower(piece) == 'q') return queenMove(move[0], move[1], move[2], move[3], *b);
+	if(tolower(piece) == 'k' || tolower(piece) == 'j') return kingMove(move[0], move[1], move[2], move[3], b);
+	if(tolower(piece) == 'n') return knightMove(move[0], move[1], move[2], move[3], b);
+	if(tolower(piece) == 'b') return bishopMove(move[0], move[1], move[2], move[3], b);
+	if(tolower(piece) == 'r' || tolower(piece) == 's') return rookMove(move[0], move[1], move[2], move[3], b);
+	if(tolower(piece) == 'q') return queenMove(move[0], move[1], move[2], move[3], b);
 	return 0;
 }
 
-int validateState(board b, void (*promotion_cb)(char *)){
+int validateState(board b){
 	int kp, piece, apc=0, cpr = b.state[64]-48, aps[32], move[4];
 	char ks = 'K'+32*cpr;
 	for(int i=0; i<64; i++){
@@ -172,7 +199,7 @@ int validateState(board b, void (*promotion_cb)(char *)){
 	move[2] = kp/8; move[3] = kp%8;
 	for(int i=0; i<apc; i++){
 		move[0] = aps[i]/8; move[1] = aps[i]%8;
-		if(validateMove(&b, move, promotion_cb)){
+		if(validateMove(&b, move, emptyCB)){
 			return 0;
 		}
 	}
@@ -182,10 +209,9 @@ int validateState(board b, void (*promotion_cb)(char *)){
 board makeMove(board *b, int *move, void (*promotion_cb)(char *)){
 	board *n = b, bc = *b;
 	if (validateMove(b, move, promotion_cb)){
-		n->state[8*move[2]+move[3]] = n->state[8*move[0]+move[1]];
 		n->state[8*move[0]+move[1]] = ' ';
 		n->state[64] = 48 + (n->state[64]==48);
-		if(!validateState(*n, promotion_cb)) return bc;
+		if(!validateState(*n)) return bc;
 		return *n;
 	}
 	return bc;
@@ -253,18 +279,17 @@ char *deepLines(board b, int max_depth, int cur_depth, sqlite3 *db){
 		rc = sqlite3_step(stmt);
 		if(rc == SQLITE_ROW){
 			strcpy(line, sqlite3_column_text(stmt, 0));
-			// if(cur_depth==0) strcat(strcat(result, line),"\n");
+			if(cur_depth==0) strcat(strcat(result, line),"\n*");
 			strcpy(child, sqlite3_column_text(stmt, 1));
 			strcpy(move, sqlite3_column_text(stmt, 2));
 			strcpy(n.state, child);
-			strcat(strcat(result, move), "\n");
-			char *cr = deepLines(n, max_depth, cur_depth+1, db);
-			if(cr[0]!='\0'){
-				for(int i=0; i<=cur_depth; i++)
+			if(cur_depth!=0){
+				for(int i=0; i<cur_depth; i++)
 					strcat(result, "   ");
-				strcat(strcat(result, "↳"), cr);
+				strcat(result, "↳");
 			}
-			free(cr);
+			strcat(strcat(result, move), "\n");
+			strcat(result, deepLines(n, max_depth, cur_depth+1, db));
 		}
 	}while(rc == SQLITE_ROW);
 	sqlite3_finalize(stmt);
@@ -299,7 +324,7 @@ board getMove(board b, int *move, char* line, void (*comment_cb)(char *), void (
 	char movename[16] = "";
 	moveName(bc, move, movename);
 	if(strcmp(n.state, bc.state)){
-		// comment_cb(comment);
+		comment_cb(comment);
 		sqlite3_bind_text(stmt, 2, bc.state, -1, SQLITE_STATIC);
 		sqlite3_bind_text(stmt, 3, n.state, -1, SQLITE_STATIC);
 		sqlite3_bind_text(stmt, 4, comment, -1, SQLITE_STATIC);
