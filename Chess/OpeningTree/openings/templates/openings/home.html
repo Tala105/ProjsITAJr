@@ -1,0 +1,38 @@
+{% extends 'main.html' %}
+
+	{% block content %}
+	<h1 style="text-align: center; color: #774421">Home Page</h1>
+	<div class="opbox">
+		<div>
+			<h3> 0 --<a href="{% url 'first_move' %}"> New Line </a></h3>
+			{% for id, line in moves %}
+				<div>
+				<h4>{{forloop.counter}} -- <a href="{% url 'position' id %}?line={{line}}">{{line}}</a></h5>
+				</div>
+			{% endfor %}
+		</div>
+	</div>
+
+	<style>
+	.opbox {
+		background-color: #b58863;
+		border: 10px 10px;
+		border-style: solid;
+		border-color: #000000;
+		margin: 0 1.5%;
+		width: 25%;
+		min-height: 80vh;
+	}
+
+	.opbox h3{
+		margin: 5px 10px;
+		padding: 0;
+	}
+
+	.opbox h4{
+		margin: 10px 10px;
+		padding: 0;
+	}
+	</style>
+
+	{% endblock %}

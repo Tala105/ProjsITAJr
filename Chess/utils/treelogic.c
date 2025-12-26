@@ -72,8 +72,8 @@ int promote(int yi, int xi, int yf, int xf, char np, board b, board *n) {
 }
 
 int wpawnMove(int yi, int xi, int yf, int xf, char np, board b, board *n) {
-	printf("WPM\n");
   int piece = b.state[8 * yf + xf];
+	printf("%d %d -> %d %d\n", xi, yi, xf, yf);
   if ((yf - yi == 1 && abs(xi - xf) == 1 && piece != 32) ||
       (yf - yi == 1 && xf == xi && piece == 32)) {
     n->state[65] = '@';
@@ -129,7 +129,6 @@ int bpawnMove(int yi, int xi, int yf, int xf, char np, board b, board *n) {
 }
 
 int knightMove(int yi, int xi, int yf, int xf, board b, board *n) {
-	printf("Knight Move\n");
   if (abs(yf - yi) > 2 || abs(xf - xi) > 2)
     return 0;
   if (abs(yf - yi) + abs(xf - xi) == 3) {
@@ -193,10 +192,8 @@ int validateMove(board b, int *move, board *n) {
       return 0;
 
   char piece = b.state[8 * move[0] + move[1]];
-	printf("Piece: %c -> %c\n", piece, b.state[move[2]*8+move[3]]);
   if (piece == ' ' || (b.state[64] == 48) == (piece < 91))
     return 0;
-	printf("Correct Color Piece\n");
   if (b.state[move[2] * 8 + move[3]] != ' ' &&
       islower(piece) == islower(b.state[move[2] * 8 + move[3]]))
     return 0;
@@ -280,11 +277,16 @@ void printBoard(board b) {
 
 void findPieces(board b, char piece, int *pos) {
   int index = 0;
-  for (int i = 0; i < 64; i++)
+  for (int i = 0; i < 64; i++){
+		if(b.state[i] == 'j') b.state[i]='k';
+		else if(b.state[i] =='J') b.state[i] = 'K';
+		else if(b.state[i] == 's') b.state[i] = 'r';
+		else if(b.state[i] == 'S') b.state[i] = 'R';
     if (b.state[i] == piece) {
       pos[index++] = i / 8;
       pos[index++] = i % 8;
     }
+	}
 }
 
 void nameToMove(board b, char *name, int *move) {
@@ -304,9 +306,9 @@ void nameToMove(board b, char *name, int *move) {
 
   if (isupper(name[0]))
     piece = name[index++]+32*!(b.state[64]-48);
-  if (name[index + 1] >= 'a') {
-    if (name[index] >= 'a') move[1] = name[index++] - 98;
-    else move[0] = name[index++] - 48;
+  else if (name[index + 1] >= 'a') {
+    if (name[index] >= 'a') move[1] = name[index++] - 97;
+    else move[0] = name[index++] - 49;
   }
   if (name[index] == 'x')
     index++;
@@ -319,10 +321,9 @@ void nameToMove(board b, char *name, int *move) {
   move2[3] = move[3];
   for (int i = 0; i < 16 && pos[i] >= 0; i += 2) {
     move2[0] = pos[i]; move2[1] = pos[i + 1];
-    printf("ValidatindMove: %dx%d -> %dx%d\n", move2[0], move2[1], move2[2], move2[3]);
     if (validateMove(b, move2, &n)) {
-      if ((move[1] == -1 && move[0] == -1) || move2[1] == move[0] ||
-          move2[0] == move[1]) {
+      if ((move[1] == -1 && move[0] == -1) || move2[0] == move[0] ||
+          move2[1] == move[1]) {
         move[1] = move2[1];
         move[0] = move2[0];
         break;

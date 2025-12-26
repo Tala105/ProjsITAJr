@@ -16,8 +16,8 @@
 		<div style="display: flex; flex-direction: column; width: 50%;">
 			<div style="height: 75%; width: 100%;">
 				<ul>
-					{% for line in lines %}
-						<li>{{ line.parent }} </li>
+					{% for line in Children %}
+					<li><a href="{% url 'position' line.child.id %}?line={{ line.line }}"> {{ line.move }}({{ line.line }}) </a></li>
 					{% empty %}
 						<li>There are no Moves saved in this line.</li>
 					{% endfor %}

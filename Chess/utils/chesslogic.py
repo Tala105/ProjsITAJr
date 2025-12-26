@@ -29,8 +29,6 @@ def make_move(boardstate, move):
     return nboard.state.decode("utf-8")
 
 def nameToMove(boardstate, movename):
-    print(boardstate)
-    print(movename)
     move = (c_int * 5)(*[-1]*5)
     b = board(boardstate.encode("utf-8"))
     treelib.nameToMove(b, movename.encode("utf-8"), move)
